@@ -1,0 +1,45 @@
+services:
+  api:
+    build:
+      context: ./apps/api-server
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      # Use Neon in .env, or run with the localdb profile below.
+      DATABASE_URL: ${DATABASE_URL:-}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+
+  web:
+    build:
+      context: ./apps/web-app
+      dockerfile: Dockerfile
+      args:
+        # Frontend calls backend via this URL (baked into the build)
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000}
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    ports:
+      - "5173:3000"
+    depends_on:
+      - api
+
+  # Optional local Postgres for local dev.
+  # If you want to use Neon locally instead, remove this service + depends_on.
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: bookmarks
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
