@@ -8,6 +8,7 @@ services:
       PORT: 3000
       # Use Neon in .env, or run with the localdb profile below.
       DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/bookmarks?schema=public}
+      CORS_ORIGIN: ${CORS_ORIGIN:-}
     ports:
       - "3000:3000"
     depends_on:
