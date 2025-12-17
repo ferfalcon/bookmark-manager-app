@@ -1,30 +1,26 @@
-import fp from 'fastify-plugin'
+import type { FastifyPluginAsync } from 'fastify'
 import cors from '@fastify/cors'
+import fp from 'fastify-plugin'
 
-function normalizeOrigin(value: string) {
-  return value.trim().replace(/\/+$/, '')
+function normalize(origin: string) {
+  return origin.trim().replace(/\/+$/, '')
 }
 
-export default fp(async (app) => {
-  const raw = process.env.CORS_ORIGIN ?? ''
-  const allowed = raw
-    .split(',')
-    .map(normalizeOrigin)
+const corsPlugin: FastifyPluginAsync = async (fastify) => {
+  const DEFAULT_ORIGIN = 'http://localhost:5173'
+  const originEnv = process.env.CORS_ORIGIN
+
+  const origins = (originEnv ? originEnv.split(',') : [DEFAULT_ORIGIN])
+    .map(normalize)
     .filter(Boolean)
 
-  app.log.info({ allowed }, 'CORS allowed origins')
-
-  await app.register(cors, {
+  await fastify.register(cors, {
     origin: (origin, cb) => {
-      // Requests like curl won’t send Origin; allow them.
       if (!origin) return cb(null, true)
-
-      const incoming = normalizeOrigin(origin)
-
-      // If no allow-list configured, allow all (dev-friendly).
-      if (allowed.length === 0) return cb(null, true)
-
-      return cb(null, allowed.includes(incoming))
+      cb(null, origins.includes(normalize(origin)))
     },
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   })
-})
+}
+
+export default fp(corsPlugin)
